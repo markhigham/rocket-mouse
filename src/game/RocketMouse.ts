@@ -26,12 +26,13 @@ export default class RocketMouse extends Phaser.GameObjects.Container {
 
     this.mouse = scene.add
       .sprite(0, 0, TextureKeys.RocketMouse)
-      .setOrigin(0.5, 1)
-      .play(AnimationKeys.RocketMouseRun);
+      .setOrigin(0.5, 1);
 
-    this.flames = scene.add
-      .sprite(-63, -15, TextureKeys.RocketMouse)
-      .play(AnimationKeys.RocketFlamesOn);
+    this.flames = scene.add.sprite(-63, -15, TextureKeys.RocketMouse);
+
+    this.createAnimations();
+    this.mouse.play(AnimationKeys.RocketMouseRun);
+    this.mouse.play(AnimationKeys.RocketFlamesOn);
 
     this.enableJetPack(false);
 
@@ -41,8 +42,8 @@ export default class RocketMouse extends Phaser.GameObjects.Container {
     scene.physics.add.existing(this);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(this.mouse.width, this.mouse.height);
-    body.setOffset(this.mouse.width * -0.5, -this.mouse.height);
+    body.setSize(this.mouse.width * 0.5, this.mouse.height * 0.7);
+    body.setOffset(this.mouse.width * -0.3, -this.mouse.height + 15);
 
     this.cursors = scene.input.keyboard.createCursorKeys();
   }
@@ -84,7 +85,66 @@ export default class RocketMouse extends Phaser.GameObjects.Container {
     }
   }
 
-  enableJetPack(enabled: boolean) {
+  private createAnimations() {
+    this.mouse.anims.create({
+      key: AnimationKeys.RocketMouseRun,
+      frames: this.mouse.anims.generateFrameNames("rocket-mouse", {
+        start: 1,
+        end: 4,
+        prefix: "rocketmouse_run",
+        zeroPad: 2,
+        suffix: ".png",
+      }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.mouse.anims.create({
+      key: AnimationKeys.RocketFlamesOn,
+      frames: this.mouse.anims.generateFrameNames(TextureKeys.RocketMouse, {
+        start: 1,
+        end: 2,
+        prefix: "flame",
+        suffix: ".png",
+      }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.mouse.anims.create({
+      key: AnimationKeys.RocketMouseFall,
+      frames: [
+        {
+          key: TextureKeys.RocketMouse,
+          frame: "rocketmouse_fall01.png",
+        },
+      ],
+    });
+
+    this.mouse.anims.create({
+      key: AnimationKeys.RocketMouseFly,
+      frames: [
+        {
+          key: TextureKeys.RocketMouse,
+          frame: "rocketmouse_fly01.png",
+        },
+      ],
+    });
+
+    this.mouse.anims.create({
+      key: AnimationKeys.RocketMouseDead,
+      frames: this.mouse.anims.generateFrameNames(TextureKeys.RocketMouse, {
+        start: 1,
+        end: 2,
+        prefix: "rocketmouse_dead",
+        zeroPad: 2,
+        suffix: ".png",
+      }),
+      frameRate: 10,
+    });
+  }
+
+  private enableJetPack(enabled: boolean) {
     this.flames.setVisible(enabled);
   }
 

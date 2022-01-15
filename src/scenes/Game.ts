@@ -1,11 +1,10 @@
 import Phaser from "phaser";
-import TextureKeys from "../consts/TextureKeys";
 
-import RocketMouse from "../game/RocketMouse";
 import LaserObstacle from "../game/LaserObstacle";
-
-import SceneKeys from "../consts/SceneKeys";
 import MouseEvents from "../consts/MouseEvents";
+import RocketMouse from "../game/RocketMouse";
+import SceneKeys from "../consts/SceneKeys";
+import TextureKeys from "../consts/TextureKeys";
 
 export default class Game extends Phaser.Scene {
   private background!: Phaser.GameObjects.TileSprite;
@@ -22,8 +21,19 @@ export default class Game extends Phaser.Scene {
 
   private laserObstacle!: LaserObstacle;
 
+  private scoreLabel!: Phaser.GameObjects.Text;
+  private score = 0;
+
+  private mouse!: RocketMouse;
+
+  private coins!: Phaser.Physics.Arcade.StaticGroup;
+
   constructor() {
     super(SceneKeys.Game);
+  }
+
+  init() {
+    this.score = 0;
   }
 
   create() {
@@ -68,31 +78,52 @@ export default class Game extends Phaser.Scene {
     this.laserObstacle = new LaserObstacle(this, 900, 100);
     this.add.existing(this.laserObstacle);
 
-    const mouse = new RocketMouse(this, width * 0.5, height - 30);
+    this.coins = this.physics.add.staticGroup();
+    this.spawnCoins();
 
-    mouse.events.once(MouseEvents.Dead, () => {
+    this.mouse = new RocketMouse(this, width * 0.5, height - 30);
+
+    this.mouse.events.once(MouseEvents.Dead, () => {
       console.log("aaargh");
       this.scene.run(SceneKeys.GameOver);
     });
-    this.add.existing(mouse);
+    this.add.existing(this.mouse);
 
-    const body = mouse.body as Phaser.Physics.Arcade.Body;
+    const body = this.mouse.body as Phaser.Physics.Arcade.Body;
     body.setCollideWorldBounds(true);
 
     body.setVelocityX(200);
 
-    this.physics.world.setBounds(0, 0, Number.MAX_SAFE_INTEGER, height - 30);
+    this.physics.world.setBounds(0, 0, Number.MAX_SAFE_INTEGER, height - 55);
 
-    this.cameras.main.startFollow(mouse);
+    this.cameras.main.startFollow(this.mouse);
     this.cameras.main.setBounds(0, 0, Number.MAX_SAFE_INTEGER, height);
 
     this.physics.add.overlap(
       this.laserObstacle,
-      mouse,
+      this.mouse,
       this.handleOverlapLaser,
       undefined,
       this
     );
+
+    this.physics.add.overlap(
+      this.coins,
+      this.mouse,
+      this.handleCollectCoin,
+      undefined,
+      this
+    );
+
+    this.scoreLabel = this.add
+      .text(10, 10, `Score: ${this.score}`, {
+        fontSize: "24px",
+        color: "#080808",
+        backgroundColor: "#F8E71C",
+        shadow: { fill: true, blur: 0, offsetY: 0 },
+        padding: { left: 15, right: 15, top: 10, bottom: 10 },
+      })
+      .setScrollFactor(0);
   }
 
   update(time: number, delta: number): void {
@@ -101,6 +132,37 @@ export default class Game extends Phaser.Scene {
     this.wrapBookcases();
     this.wrapLaserObstacle();
     this.background.setTilePosition(this.cameras.main.scrollX);
+    this.teleportBackwards();
+    this.updateScore();
+  }
+
+  private teleportBackwards() {
+    const scrollX = this.cameras.main.scrollX;
+    const maxX = 2380;
+
+    if (scrollX > maxX) {
+      console.log("teleport");
+      this.mouse.x -= maxX;
+      this.mouseHole.x -= maxX;
+
+      this.windows.forEach((win) => (win.x -= maxX));
+      this.bookcases.forEach((bc) => (bc.x -= maxX));
+
+      this.laserObstacle.x -= maxX;
+      const laserBody = this.laserObstacle
+        .body as Phaser.Physics.Arcade.StaticBody;
+      laserBody.x -= maxX;
+
+      this.spawnCoins();
+
+      this.coins.children.each((child) => {
+        const coin = child as Phaser.Physics.Arcade.Sprite;
+        if (!coin.active) return;
+        coin.x -= maxX;
+        const body = coin.body as Phaser.Physics.Arcade.StaticBody;
+        body.updateFromGameObject();
+      });
+    }
   }
 
   private wrapMouseHole() {
@@ -177,7 +239,7 @@ export default class Game extends Phaser.Scene {
     }
   }
 
-  wrapLaserObstacle() {
+  private wrapLaserObstacle() {
     const scrollX = this.cameras.main.scrollX;
     const rightEdgge = scrollX + this.scale.width;
 
@@ -198,11 +260,65 @@ export default class Game extends Phaser.Scene {
     }
   }
 
-  handleOverlapLaser(
+  private handleOverlapLaser(
     obj1: Phaser.GameObjects.GameObject,
     obj2: Phaser.GameObjects.GameObject
   ) {
     const mouse = obj2 as RocketMouse;
     mouse.kill();
+  }
+
+  private updateScore() {
+    const pos = Math.floor(this.cameras.main.scrollX);
+    this.scoreLabel.setText(`Score: ${this.score}, Pos: ${pos}`);
+  }
+
+  private handleCollectCoin(
+    obj1: Phaser.GameObjects.GameObject,
+    obj2: Phaser.GameObjects.GameObject
+  ) {
+    console.log("coin overlap");
+
+    //obj2 is the coin
+    const coin = obj2 as Phaser.Physics.Arcade.Sprite;
+
+    this.coins.killAndHide(coin);
+    coin.body.enable = false;
+
+    this.score++;
+  }
+
+  private spawnCoins() {
+    this.coins.children.each((child) => {
+      const coin = child as Phaser.Physics.Arcade.Sprite;
+      this.coins.killAndHide(coin);
+      coin.body.enable = false;
+    });
+
+    const scrollX = this.cameras.main.scrollX;
+    const rightEdge = scrollX + this.scale.width;
+
+    let x = rightEdge + 100;
+
+    const numCoins = Phaser.Math.Between(1, 20);
+
+    for (let i = 0; i < numCoins; ++i) {
+      const coin = this.coins.get(
+        x,
+        Phaser.Math.Between(100, this.scale.height - 100),
+        TextureKeys.Coin
+      ) as Phaser.Physics.Arcade.Sprite;
+
+      coin.setVisible(true);
+      coin.setActive(true);
+
+      const body = coin.body as Phaser.Physics.Arcade.StaticBody;
+      body.setCircle(body.width * 0.5);
+      body.enable = true;
+
+      body.updateFromGameObject();
+
+      x += coin.width * 1.5;
+    }
   }
 }
