@@ -1,6 +1,4 @@
-![phaser3-parceljs-template](https://user-images.githubusercontent.com/2236153/71606463-37a0da80-2b2e-11ea-9b5f-5d26ccc84f91.png)
-
-# Phaser 3 + TypeScript + Parcel Template
+# Phaser 3 + TypeScript + Rocket Mouse
 > For people who want to spend time making Phaser 3 games in TypeScript instead of configuring build tools.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -30,22 +28,6 @@ Then install Parcel:
 ```bash
 npm install -g parcel-bundler
 ```
-
-## Getting Started
-
-Clone this repository to your local machine:
-
-```bash
-git clone https://github.com/ourcade/phaser3-typescript-parcel-template.git
-```
-
-This will create a folder named `phaser3-typescript-parcel-template`. You can specify a different folder name like this:
-
-```bash
-git clone https://github.com/ourcade/phaser3-typescript-parcel-template.git my-folder-name
-```
-
-Go into your new project folder and install dependencies:
 
 ```bash
 cd phaser3-typescript-parcel-template # or 'my-folder-name'
