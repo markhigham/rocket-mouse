@@ -18,6 +18,11 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(TextureKeys.Bookcase1, "house/object_bookcase1.png");
     this.load.image(TextureKeys.Bookcase2, "house/object_bookcase2.png");
 
+    this.load.image(TextureKeys.LaserMiddle, "house/object_laser.png");
+    this.load.image(TextureKeys.LaserEnd, "house/object_laser_end.png");
+
+    // Sprites and animations
+
     this.load.atlas(
       TextureKeys.RocketMouse,
       "characters/rocket-mouse.png",
@@ -68,6 +73,18 @@ export default class Preloader extends Phaser.Scene {
           frame: "rocketmouse_fly01.png",
         },
       ],
+    });
+
+    this.anims.create({
+      key: AnimationKeys.RocketMouseDead,
+      frames: this.anims.generateFrameNames(TextureKeys.RocketMouse, {
+        start: 1,
+        end: 2,
+        prefix: "rocketmouse_dead",
+        zeroPad: 2,
+        suffix: ".png",
+      }),
+      frameRate: 10,
     });
 
     this.scene.start(SceneKeys.Game);
